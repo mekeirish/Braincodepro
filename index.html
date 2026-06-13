@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Braincode — Assistant IA</title>
+    
+    <!-- Polices -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        deep: {
+                            900: '#0b0b0d',
+                            800: '#0f0f11',
+                            700: '#141418',
+                            600: '#16161a',
+                            500: '#1a1a1f',
+                        },
+                        cyber: {
+                            violet: '#8b5cf6',
+                            'violet-hover': '#7c3aed',
+                            amber: '#f59e0b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'neu-dark': 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.6)',
+                        'neu-pressed': 'inset 0 2px 4px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,255,255,0.03)',
+                        'glow-violet': '0 0 15px rgba(139,92,246,0.3), 0 0 30px rgba(139,92,246,0.1)',
+                        'glow-amber': '0 0 10px rgba(245,158,11,0.3), 0 0 20px rgba(245,158,11,0.1)',
+                    },
+                    animation: {
+                        'pulse-amber': 'pulse-amber 0.9s infinite alternate',
+                        'pulse-green': 'pulse-green 0.9s infinite alternate',
+                        'pulse-red': 'pulse-red 0.9s infinite alternate',
+                    },
+                    keyframes: {
+                        'pulse-amber': {
+                            'from': { opacity: '0.4', transform: 'scale(0.9)' },
+                            'to': { opacity: '1', transform: 'scale(1.1)' },
+                        },
+                        'pulse-green': {
+                            'from': { opacity: '0.4' },
+                            'to': { opacity: '1' },
+                        },
+                        'pulse-red': {
+                            'from': { opacity: '0.4' },
+                            'to': { opacity: '1' },
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background: radial-gradient(ellipse at 50% 0%, #121218 0%, #0b0b0d 70%);
+            letter-spacing: -0.01em;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f0f11;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+        
+        .btn-press {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-press:active {
+            transform: scale(0.98);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,255,255,0.03);
+        }
+        
+        input:focus, textarea:focus {
+            box-shadow: 0 0 0 2px rgba(139,92,246,0.25), inset 0 1px 0 rgba(255,255,255,0.03);
+        }
+        
+        /* Style des logs */
+        .log-line {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        
+        /* Effet de flou pour la zone de saisie */
+        .input-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b0b0d">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4b6cb7">
+<link rel="apple-touch-icon" href="icon.png"></head>
+<body class="font-sans text-zinc-100 antialiased min-h-screen flex flex-col p-4 md:p-6">
+
+    <!-- Conteneur principal -->
+    <div class="w-full max-w-[720px] mx-auto flex flex-col flex-1">
+
+        <!-- En-tête -->
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-3 h-3 bg-cyber-violet rounded-full shadow-glow-violet animate-pulse"></div>
+            <h1 class="text-xl font-bold tracking-[0.15em] text-white uppercase">Braincode</h1>
+            <span class="ml-auto text-[10px] text-zinc-700 font-mono uppercase tracking-wider">IA Console</span>
+        </div>
+
+        <!-- Carte : Configuration -->
+        <div class="bg-deep-600/80 backdrop-blur-sm border border-zinc-800/60 rounded-2xl p-5 mb-5 shadow-neu-dark">
+            
+            <!-- Clé API Gemini -->
+            <div class="mb-4">
+                <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 mb-2.5 ml-1">
+                    Clé API Gemini
+                </label>
+                <div class="flex gap-2.5">
+                    <input type="password" id="gk" placeholder="AIza..." oninput="save()"
+                           class="flex-1 bg-deep-700 border border-zinc-800/40 rounded-xl px-4 py-3 
+                                  text-cyber-amber font-mono text-sm placeholder-zinc-600
+                                  shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] 
+                                  focus:outline-none transition-all duration-200">
+                    <button type="button" onclick="pasteToField('gk')"
+                            class="btn-press px-4 py-3 bg-deep-500 border border-zinc-700/40 rounded-xl 
+                                   text-zinc-400 hover:text-white font-semibold text-xs uppercase tracking-wider
+                                   transition-all duration-200 flex items-center gap-1.5">
+                        📋 Coller
+                    </button>
+                </div>
+            </div>
+
+            <!-- GitHub Token -->
+            <div class="mb-4">
+                <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 mb-2.5 ml-1">
+                    GitHub Token
+                </label>
+                <div class="flex gap-2.5">
+                    <input type="password" id="gt" placeholder="ghp_..." oninput="save()"
+                           class="flex-1 bg-deep-700 border border-zinc-800/40 rounded-xl px-4 py-3 
+                                  text-cyber-amber font-mono text-sm placeholder-zinc-600
+                                  shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] 
+                                  focus:outline-none transition-all duration-200">
+                    <button type="button" onclick="pasteToField('gt')"
+                            class="btn-press px-4 py-3 bg-deep-500 border border-zinc-700/40 rounded-xl 
+                                   text-zinc-400 hover:text-white font-semibold text-xs uppercase tracking-wider
+                                   transition-all duration-200 flex items-center gap-1.5">
+                        📋 Coller
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pseudo/Repo -->
+            <div class="mb-4">
+                <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 mb-2.5 ml-1">
+                    Dépôt
+                </label>
+                <input type="text" id="rp" placeholder="pseudo/repository" oninput="save()"
+                       class="w-full bg-deep-700 border border-zinc-800/40 rounded-xl px-4 py-3 
+                              text-zinc-100 font-mono text-sm placeholder-zinc-600
+                              shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] 
+                              focus:outline-none transition-all duration-200">
+            </div>
+
+            <!-- Bouton Sauvegarder -->
+            <button class="btn-press w-full py-3.5 bg-cyber-violet rounded-xl text-white font-bold text-sm uppercase tracking-[0.12em]
+                           shadow-glow-violet hover:bg-cyber-violet-hover transition-all duration-200 flex items-center justify-center gap-2"
+                    onclick="manualSave()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                </svg>
+                Sauvegarder
+            </button>
+        </div>
+
+        <!-- Carte : Zone de travail -->
+        <div class="bg-deep-600/80 backdrop-blur-sm border border-zinc-800/60 rounded-2xl p-5 mb-5 shadow-neu-dark">
+            
+            <!-- Instruction -->
+            <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 mb-2.5 ml-1">
+                Instruction de Modification
+            </label>
+            <textarea id="pr" rows="3" placeholder="Décris la modification que tu souhaites appliquer..."
+                      class="w-full bg-deep-700 border border-zinc-800/40 rounded-xl p-4 
+                             text-zinc-300 font-mono text-sm leading-relaxed resize-none
+                             shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] 
+                             placeholder:text-zinc-700 focus:text-zinc-100
+                             focus:outline-none transition-all duration-200 mb-4"></textarea>
+
+            <!-- Bouton principal -->
+            <button class="btn-press w-full py-4 bg-cyber-violet rounded-xl text-white font-bold text-sm uppercase tracking-[0.12em]
+                           shadow-glow-violet hover:bg-cyber-violet-hover transition-all duration-200 
+                           flex items-center justify-center gap-2 mb-4"
+                    onclick="start()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                Tester & Appliquer
+            </button>
+
+            <!-- Actions secondaires -->
+            <div class="flex gap-3 mb-5">
+                <button class="btn-press flex-1 py-3 bg-deep-500 border border-zinc-700/40 rounded-xl 
+                               text-cyber-amber font-semibold text-xs uppercase tracking-[0.1em]
+                               hover:bg-cyber-amber/5 hover:border-cyber-amber/50 transition-all duration-200"
+                        onclick="showHistory()">
+                    📜 Historique
+                </button>
+                <button class="btn-press flex-1 py-3 bg-deep-500 border border-zinc-700/40 rounded-xl 
+                               text-cyber-amber font-semibold text-xs uppercase tracking-[0.1em]
+                               hover:bg-cyber-amber/5 hover:border-cyber-amber/50 transition-all duration-200"
+                        onclick="undoLast()">
+                    ↩️ Back
+                </button>
+            </div>
+
+            <!-- Indicateurs Live -->
+            <div class="flex items-center justify-between bg-deep-700/60 border border-zinc-800/40 rounded-xl px-5 py-4">
+                <div class="w-3 h-3 rounded-full bg-zinc-700 transition-all duration-400" id="voyantLeft"></div>
+                <a id="liveBtn" href="#" target="_blank" 
+                   class="btn-press flex-1 mx-4 py-3 bg-deep-500 border border-zinc-700/40 rounded-xl
+                          text-white font-bold text-xs uppercase tracking-[0.12em] text-center no-underline
+                          hover:bg-deep-500/80 transition-all duration-200 block">
+                    View Live Site
+                </a>
+                <div class="w-3 h-3 rounded-full bg-zinc-700 transition-all duration-400" id="voyantRight"></div>
+            </div>
+        </div>
+
+        <!-- Console de Logs -->
+        <div class="bg-deep-600/80 backdrop-blur-sm border border-zinc-800/60 rounded-2xl p-5 shadow-neu-dark flex-1">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
+                    <span class="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Console</span>
+                </div>
+                <span class="text-[10px] text-zinc-700 font-mono">output</span>
+            </div>
+            <div id="log" 
+                 class="bg-deep-800 border border-zinc-800/40 rounded-xl p-4 
+                        text-xs font-mono leading-relaxed overflow-y-auto
+                        shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]
+                        h-[220px] md:h-[280px]">
+                <div class="text-zinc-600">> Initialisation...</div>
+            </div>
+        </div>
+
+        <!-- Signature -->
+        <div class="text-center pt-8 pb-4">
+            <p class="text-xs text-zinc-800 tracking-[0.15em] font-medium uppercase">
+                Made by Brahim Laiche <span class="text-zinc-700">2026</span> Paris
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // LOGIQUE MÉTIER — STRICTEMENT PRÉSERVÉE
+        // =============================================
+        
+        let isDeploying = false;
+        let deploymentStartTime = 0;
+
+        const logger = (m, color = "#7ee787") => {
+            const logEl = document.getElementById('log');
+            if (logEl) {
+                logEl.innerHTML += `<div class="log-line" style="color:${color}">> ${m}</div>`;
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+        };
+
+        window.onerror = function(message, source, lineno, colno, error) {
+            logger(`CRASH SCRIPT : ${message} (Ligne ${lineno})`, "#f85149");
+            return false;
+        };
+
+        async function pasteToField(fieldId) {
+            try {
+                const text = await navigator.clipboard.readText();
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.value = text;
+                    save();
+                    logger(`Collé dans ${fieldId === 'gk' ? 'Clé API Gemini' : 'GitHub Token'}`, "#7ee787");
+                }
+            } catch (err) {
+                logger(`Erreur collage : ${err.message}`, "#f85149");
+                alert("Impossible de lire le presse-papiers. Vérifiez les permissions.");
+            }
+        }
+
+        async function updateGoldenLink() {
+            const r = document.getElementById('rp').value.trim();
+            const t = document.getElementById('gt').value.trim();
+            const liveBtn = document.getElementById('liveBtn');
+            
+            if (!r || !r.includes('/')) {
+                liveBtn.href = "#";
+                return;
+            }
+
+            let parts = r.split('/');
+            let user = parts[0].toLowerCase();
+            let repo = parts[1];
+            
+            liveUrl = `https://${user}.github.io/${repo}/`;
+            liveBtn.href = liveUrl;
+
+            if (t) {
+                try {
+                    const repoRes = await fetch(`https://api.github.com/repos/${r}`, {
+                        headers: { "Authorization": `token ${t}` }
+                    });
+                    
+                    if (repoRes.ok) {
+                        const repoData = await repoRes.json();
+                        const cleanUser = repoData.owner.login.toLowerCase();
+                        const cleanRepo = repoData.name;
+                        liveBtn.href = `https://${cleanUser}.github.io/${cleanRepo}/`;
+                    }
+                } catch (e) {
+                    // Silencieux, on garde le fallback
+                }
+            }
+        }
+
+        document.getElementById('liveBtn').addEventListener('click', function(e) {
+            if(this.getAttribute('href') === '#') {
+                e.preventDefault();
+                alert("Renseigne d'abord un Pseudo/Repo valide.");
+            }
+        });
+
+        function save() {
+            try {
+                localStorage.setItem('k1', document.getElementById('gk').value.trim());
+                localStorage.setItem('k2', document.getElementById('gt').value.trim());
+                localStorage.setItem('k3', document.getElementById('rp').value.trim());
+                updateGoldenLink();
+            } catch (e) {
+                logger("Erreur sauvegarde auto : " + e.message, "#f85149");
+            }
+        }
+
+        function manualSave() {
+            save();
+            alert("Configuration sauvegardée !");
+        }
+
+        async function checkWorkflowStatus() {
+            try {
+                const t = document.getElementById('gt').value.trim();
+                const r = document.getElementById('rp').value.trim();
+                if (!t || !r || !r.includes('/')) return;
+
+                const res = await fetch(`https://api.github.com/repos/${r}/actions/runs?per_page=1`, {
+                    headers: { "Authorization": `token ${t}` }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                if (data && data.workflow_runs && data.workflow_runs.length > 0) {
+                    const latestRun = data.workflow_runs[0];
+                    const vLeft = document.getElementById('voyantLeft');
+                    const vRight = document.getElementById('voyantRight');
+                    if (!vLeft || !vRight) return;
+                    
+                    const runCreatedTime = new Date(latestRun.created_at).getTime();
+
+                    if (isDeploying && runCreatedTime < deploymentStartTime) {
+                        vLeft.className = 'w-3 h-3 rounded-full bg-cyber-amber shadow-glow-amber animate-pulse-amber transition-all duration-400';
+                        vRight.className = 'w-3 h-3 rounded-full bg-cyber-amber shadow-glow-amber animate-pulse-amber transition-all duration-400';
+                        return;
+                    }
+                    
+                    vLeft.className = 'w-3 h-3 rounded-full bg-zinc-700 transition-all duration-400';
+                    vRight.className = 'w-3 h-3 rounded-full bg-zinc-700 transition-all duration-400';
+
+                    if (latestRun.status === 'queued' || latestRun.status === 'in_progress') {
+                        vLeft.classList.add('bg-cyber-amber', 'shadow-glow-amber', 'animate-pulse-amber');
+                        vRight.classList.add('bg-cyber-amber', 'shadow-glow-amber', 'animate-pulse-amber');
+                    } else if (latestRun.status === 'completed' && latestRun.conclusion === 'success') {
+                        vLeft.classList.add('bg-emerald-500', 'shadow-[0_0_12px_rgba(16,185,129,0.5)]', 'animate-pulse-green');
+                        vRight.classList.add('bg-emerald-500', 'shadow-[0_0_12px_rgba(16,185,129,0.5)]', 'animate-pulse-green');
+                        if (isDeploying) {
+                            logger("🚀 LE DÉPLOIEMENT GITHUB PAGES EST EFFECTIF !", "#7ee787");
+                            isDeploying = false;
+                        }
+                    } else if (latestRun.status === 'completed' && (latestRun.conclusion === 'failure' || latestRun.conclusion === 'cancelled')) {
+                        vLeft.classList.add('bg-red-500', 'shadow-[0_0_12px_rgba(239,68,68,0.5)]', 'animate-pulse-red');
+                        vRight.classList.add('bg-red-500', 'shadow-[0_0_12px_rgba(239,68,68,0.5)]', 'animate-pulse-red');
+                        isDeploying = false;
+                    }
+                }
+            } catch (e) {
+                // Silencieux
+            }
+        }
+
+        async function showHistory() {
+            try {
+                const t = document.getElementById('gt').value.trim();
+                const r = document.getElementById('rp').value.trim();
+                if (!t || !r || !r.includes('/')) {
+                    logger("Erreur : Configuration GitHub incomplète.", "#f85149");
+                    return;
+                }
+                document.getElementById('log').innerHTML = "";
+                logger("RÉCUPÉRATION DE L'HISTORIQUE...", "#f59e0b");
+                
+                const res = await fetch(`https://api.github.com/repos/${r}/commits?path=index.html&per_page=7`, {
+                    headers: { "Authorization": `token ${t}` }
+                });
+                if (!res.ok) throw new Error("Réponse serveur GitHub KO (Status " + res.status + ")");
+                const commits = await res.json();
+                
+                logger("--- DERNIÈRES MODIFICATIONS ---", "#8b5cf6");
+                commits.forEach((c, idx) => {
+                    const dateStr = new Date(c.commit.author.date).toLocaleDateString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+                    logger(`[${idx}] ${dateStr} - ${c.commit.message}`, "#c9d1d9");
+                });
+            } catch (e) {
+                logger("ERREUR HISTORIQUE : " + e.message, "#f85149");
+            }
+        }
+
+        async function undoLast() {
+            try {
+                const t = document.getElementById('gt').value.trim();
+                const r = document.getElementById('rp').value.trim();
+                if (!t || !r || !r.includes('/')) {
+                    logger("Erreur : Configuration GitHub incomplète.", "#f85149");
+                    return;
+                }
+
+                isDeploying = true;
+                deploymentStartTime = Date.now();
+                const vl = document.getElementById('voyantLeft'); const vr = document.getElementById('voyantRight');
+                if (vl && vr) { 
+                    vl.className = 'w-3 h-3 rounded-full bg-cyber-amber shadow-glow-amber animate-pulse-amber transition-all duration-400'; 
+                    vr.className = 'w-3 h-3 rounded-full bg-cyber-amber shadow-glow-amber animate-pulse-amber transition-all duration-400'; 
+                }
+
+                document.getElementById('log').innerHTML = "";
+                logger("LANCEMENT DE LA PROCÉDURE DE BACK...", "#f59e0b");
+
+                const commitsRes = await fetch(`https://api.github.com/repos/${r}/commits?path=index.html&per_page=2`, {
+                    headers: { "Authorization": `token ${t}` }
+                });
+                if (!commitsRes.ok) throw new Error("Impossible d'accéder aux commits.");
+                const commits = await commitsRes.json();
+                if (commits.length < 2) throw new Error("Historique insuffisant pour un back.");
+                const prevCommitSha = commits[1].sha;
+                
+                logger(`Cible : Version précédente (${prevCommitSha.substring(0, 7)})`);
+                const prevContentRes = await fetch(`https://api.github.com/repos/${r}/contents/index.html?ref=${prevCommitSha}`, {
+                    headers: { "Authorization": `token ${t}` }
+                });
+                if (!prevContentRes.ok) throw new Error("Lecture du code précédent impossible.");
+                const prevData = await prevContentRes.json();
+                
+                const currentFileRes = await fetch(`https://api.github.com/repos/${r}/contents/index.html`, {
+                    headers: { "Authorization": `token ${t}` }
+                });
+                if (!currentFileRes.ok) throw new Error("Échec synchro version actuelle.");
+                const currentData = await currentFileRes.json();
+                
+                logger("Restauration du code...");
+                const revertRes = await fetch(`https://api.github.com/repos/${r}/contents/index.html`, {
+                    method: "PUT",
+                    headers: { "Authorization": `token ${t}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: "↩️ Back : Annulation de la dernière modification IA",
+                        content: prevData.content,
+                        sha: currentData.sha
+                    })
+                });
+                if (revertRes.ok) {
+                    logger("↩️ BACK TRANSMIS. Attente de la validation de GitHub Pages...", "#f59e0b");
+                    setTimeout(checkWorkflowStatus, 1500);
+                } else {
+                    throw new Error("Refus de mise à jour par GitHub.");
+                }
+            } catch (e) {
+                isDeploying = false;
+                logger("ERREUR REVERT : " + e.message, "#f85149");
+                checkWorkflowStatus();
+            }
+        }
+
+        async function start() {
+            try {
+                const k = document.getElementById('gk').value.trim();
+                const t = document.getElementById('gt').value.trim();
+                const r = document.getElementById('rp').value.trim();
+                const p = document.getElementById('pr').value.trim();
+                
+                document.getElementById('log').innerHTML = "";
+                logger("DÉBUT DU DIAGNOSTIC...", "#f59e0b");
+
+                if (!k || !t || !r || !p) {
+                    throw new Error("Tous les champs (Clé, Token, Pseudo/Repo, Instruction) doivent être remplis.");
+                }
+
+                isDeploying = true;
+                deploymentStartTime = Date.now();
+                const vl = document.getElementById('voyantLeft'); const vr = document.getElementById('voyantRight');
+                if (vl && vr) { 
+                    vl.className = 'w-3 h-3 rounded-full bg-cyber-amber shadow-glow-amber animate-pulse-amber transition-all duration-400'; 
+                    vr.className = 'w-3 h-3 rounded-full bg-cyber-amber shadow-glow-amber animate-pulse-amber transition-all duration-400'; 
+                }
+
+                logger("Vérification de la clé Gemini...");
+                const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${k}`);
+                const listData = await listRes.json();
+                if (listData.error) throw new Error("Clé Gemini invalide : " + listData.error.message);
+                
+                const model = listData.models.find(m => m.supportedGenerationMethods.includes("generateContent"));
+                if (!model) throw new Error("Aucun modèle de génération disponible.");
+                const modelName = model.name.split('/').pop();
+                logger(`Modèle sélectionné : ${modelName}`);
+                
+                logger("Récupération du code source sur GitHub...");
+                const gitRes = await fetch(`https://api.github.com/repos/${r}/contents/index.html`, {
+                    headers: { "Authorization": `token ${t}` }
+                });
+                if (!gitRes.ok) throw new Error("index.html introuvable ou Token invalide (Code: " + gitRes.status + ")");
+                const gitData = await gitRes.json();
+                const oldCode = decodeURIComponent(escape(atob(gitData.content)));
+                
+                logger(`Envoi de la demande à l'IA...`);
+                const gres = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `Code actuel:\n${oldCode}\n\nModif: ${p}\n\nRéponds avec le code complet.` }]}]
+                    })
+                });
+                if (!gres.ok) throw new Error("Erreur de l'API Gemini (Status: " + gres.status + ")");
+                const gd = await gres.json();
+                
+                if(!gd.candidates || !gd.candidates[0].content.parts[0].text) throw new Error("L'IA a renvoyé une réponse vide.");
+                let newCode = gd.candidates[0].content.parts[0].text.replace(/```[a-z]*\n|```/g, "").trim();
+                
+                logger("Mise à jour du dépôt GitHub...");
+                const up = await fetch(`https://api.github.com/repos/${r}/contents/index.html`, {
+                    method: "PUT",
+                    headers: { "Authorization": `token ${t}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: "Modif IA",
+                        content: btoa(unescape(encodeURIComponent(newCode))),
+                        sha: gitData.sha
+                    })
+                });
+                if (up.ok) {
+                    logger("⚡ TRANSMISSION EFFECTUÉE. Attente du déploiement GitHub Pages...", "#f59e0b");
+                    setTimeout(checkWorkflowStatus, 1500);
+                } else {
+                    throw new Error("Échec de la synchronisation push GitHub (Status: " + up.status + ")");
+                }
+            } catch (e) {
+                isDeploying = false;
+                logger("ERREUR CRITIQUE INTERCEPTÉE : " + e.message, "#f85149");
+                checkWorkflowStatus();
+            }
+        }
+
+        window.onload = function() {
+            try {
+                document.getElementById('gk').value = localStorage.getItem('k1') || '';
+                document.getElementById('gt').value = localStorage.getItem('k2') || '';
+                document.getElementById('rp').value = localStorage.getItem('k3') || '';
+                
+                updateGoldenLink();
+                
+                checkWorkflowStatus();
+                setInterval(checkWorkflowStatus, 5000);
+                
+                document.getElementById('log').innerHTML = "<div class=\"text-zinc-600\">> Système prêt. En attente d'une action...</div>";
+            } catch (e) {
+                alert("Erreur fatale d'initialisation : " + e.message);
+            }
+        };
+    </script>
+
+    <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
+
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
+</body>
+</html>
